@@ -39,6 +39,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const navMenu = document.getElementById('nav-menu');
   const navItemLeft = document.getElementById('nav-item-left');
   const navItemRight = document.getElementById('nav-item-right');
+  const navPillContainer = document.getElementById('nav-pill-container');
+  const navOverlay = document.getElementById('nav-overlay');
 
   if (menuToggle && navBack && navMenu && navItemLeft && navItemRight) {
     let navLevel = 0; // 0 = main (Web Map, Leaderboard), 1 = submenu (Vanilla, Modded)
@@ -83,7 +85,17 @@ document.addEventListener("DOMContentLoaded", () => {
       menuToggle.setAttribute('aria-expanded', isOpen);
       menuToggle.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
       navMenu.setAttribute('aria-expanded', isOpen);
-      if (!isOpen) {
+
+      if (isOpen) {
+        navPillContainer.classList.add('open');
+        menuToggle.classList.add('open');
+        navOverlay.classList.add('active');
+        navOverlay.setAttribute('aria-hidden', 'false');
+      } else {
+        navPillContainer.classList.remove('open');
+        menuToggle.classList.remove('open');
+        navOverlay.classList.remove('active');
+        navOverlay.setAttribute('aria-hidden', 'true');
         navLevel = 0;
         renderMainMenu();
         setCenterButtons(0);
@@ -109,6 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     navMenu.addEventListener('click', (e) => {
+      // Handle main menu button clicks
       const btn = e.target.closest('[data-nav]');
       if (!btn) return;
       e.preventDefault();
@@ -121,7 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.addEventListener('click', (e) => {
-      if (navMenu.getAttribute('aria-expanded') === 'true' && !e.target.closest('.nav-wrap')) {
+      if (navMenu.getAttribute('aria-expanded') === 'true' && !e.target.closest('.nav-pill-container')) {
         setNavOpen(false);
       }
     });
@@ -221,63 +234,65 @@ document.addEventListener("DOMContentLoaded", () => {
     if (loading) loading.remove();
 
     container.innerHTML = servers.map((server, i) => {
-        const cardId = `server-card-${i}`;
-        const statusId = `server-status-${i}`;
-        const playersId = `server-players-${i}`;
-        const displayAddr = escapeHtml(server.address);
-        const copyAddr = escapeHtml(server.addressCopy != null ? server.addressCopy : server.address);
-        const name = escapeHtml(server.name);
-        const noStatus = (server.statusSource || '') === 'none';
-        const statusInitial = noStatus ? '—' : '...';
-        const playersInitial = noStatus ? '—' : '...';
-        return `<div class="server-card" id="${cardId}">
+      const cardId = `server-card-${i}`;
+      const statusId = `server-status-${i}`;
+      const playersId = `server-players-${i}`;
+      const displayAddr = escapeHtml(server.address);
+      const copyAddr = escapeHtml(server.addressCopy != null ? server.addressCopy : server.address);
+      const name = escapeHtml(server.name);
+      const noStatus = (server.statusSource || '') === 'none';
+      const statusInitial = noStatus ? '—' : '...';
+      const playersInitial = noStatus ? '—' : '...';
+      return `<div class="server-card" id="${cardId}">
   <p class="server-card-name">${name}</p>
   <div class="server-address-container">
     <code class="server-address" data-address="${copyAddr}" title="Click to copy">${displayAddr}</code>
     <button type="button" class="copy-button" data-address="${copyAddr}" aria-label="Copy address">📋 Copy</button>
   </div>
-  <p class="server-status">🟢 Status: <span class="server-status-unknown" id="${statusId}" data-checked="${noStatus}" data-no-status="${noStatus}">${statusInitial}</span></p>
-  <p class="player-count">👥 Players: <span class="server-players" id="${playersId}">${playersInitial}</span></p>
+  <div class="server-stats">
+    <p class="server-status">Status: <span class="server-status-unknown" id="${statusId}" data-checked="${noStatus}" data-no-status="${noStatus}">${statusInitial}</span></p>
+    <p class="player-count">Players: <span class="server-players" id="${playersId}">${playersInitial}</span></p>
+  </div>
 </div>`;
-      }).join('');
+    }).join('');
 
-      container.querySelectorAll('.copy-button').forEach(btn => {
-        btn.addEventListener('click', () => copyAddress(btn.dataset.address, btn));
-      });
-      container.querySelectorAll('.server-address').forEach(el => {
-        el.addEventListener('click', () => copyAddress(el.dataset.address, el.nextElementSibling));
-      });
+    container.querySelectorAll('.copy-button').forEach(btn => {
+      btn.addEventListener('click', () => copyAddress(btn.dataset.address, btn));
+    });
+    container.querySelectorAll('.server-address').forEach(el => {
+      el.addEventListener('click', () => copyAddress(el.dataset.address, el.nextElementSibling));
+    });
 
-      async function refreshAllStatuses() {
-        for (let i = 0; i < servers.length; i++) {
-          const server = servers[i];
-          const statusEl = document.getElementById(`server-status-${i}`);
-          const playersEl = document.getElementById(`server-players-${i}`);
-          if (!statusEl || !playersEl) continue;
-          if (statusEl.dataset.noStatus === 'true') continue;
-          statusEl.textContent = 'Checking...';
-          statusEl.className = 'server-status-unknown';
-          statusEl.dataset.checked = 'true';
-          let data = null;
-          try {
-            data = await fetchServerStatus(server);
-          } catch {
-            data = null;
-          }
-          if (data?.online) {
-            statusEl.textContent = 'Online';
-            statusEl.className = 'server-status-online';
-            playersEl.textContent = data.playersDisplay || 'N/A';
-          } else {
-            statusEl.textContent = data === null ? 'Unknown' : 'Offline';
-            statusEl.className = data === null ? 'server-status-unknown' : 'server-status-offline';
-            playersEl.textContent = data === null ? 'N/A' : '0 / 0';
-          }
+    async function refreshAllStatuses() {
+      for (let i = 0; i < servers.length; i++) {
+        const server = servers[i];
+        const statusEl = document.getElementById(`server-status-${i}`);
+        const playersEl = document.getElementById(`server-players-${i}`);
+        if (!statusEl || !playersEl) continue;
+        if (statusEl.dataset.noStatus === 'true') continue;
+        statusEl.textContent = 'Checking...';
+        statusEl.className = 'server-status-unknown';
+        statusEl.dataset.checked = 'true';
+        let data = null;
+        try {
+          data = await fetchServerStatus(server);
+        } catch {
+          data = null;
+        }
+        if (data?.online) {
+          statusEl.textContent = 'Online';
+          statusEl.className = 'server-status-online';
+          playersEl.textContent = data.playersDisplay || 'N/A';
+        } else {
+          statusEl.textContent = data === null ? 'Unknown' : 'Offline';
+          statusEl.className = data === null ? 'server-status-unknown' : 'server-status-offline';
+          playersEl.textContent = data === null ? 'N/A' : '0 / 0';
         }
       }
+    }
 
-      await refreshAllStatuses();
-      setInterval(refreshAllStatuses, 30000);
+    await refreshAllStatuses();
+    setInterval(refreshAllStatuses, 30000);
   }
 
   function copyAddress(address, buttonEl) {
@@ -314,7 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const clickCounter = document.getElementById("click-counter");
     if (clickCounter) {
       clickCounter.textContent = `Flowers Popped: ${totalFlowersClicked} 🎉`;
-      
+
       if (totalFlowersClicked === 10) {
         showMilestone("Nice! 10 flowers! 🌸");
       } else if (totalFlowersClicked === 50) {
@@ -343,9 +358,9 @@ document.addEventListener("DOMContentLoaded", () => {
     milestone.style.animation = "milestone-bounce 0.6s ease";
     milestone.style.border = "2px dashed rgba(255, 255, 255, 0.6)";
     milestone.style.color = "#544c4a";
-    
+
     document.body.appendChild(milestone);
-    
+
     setTimeout(() => {
       milestone.style.transition = "opacity 0.5s";
       milestone.style.opacity = "0";
@@ -406,7 +421,7 @@ document.addEventListener("DOMContentLoaded", () => {
     popNumber.style.pointerEvents = "none";
     popNumber.style.zIndex = "10000";
     popNumber.style.transform = "translateX(-50%)";
-    
+
     document.body.appendChild(popNumber);
 
     setTimeout(() => {
@@ -463,4 +478,43 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   setInterval(createLeaf, 1500);
+
+  // ----- Interactive Flower Pop Particles -----
+  document.addEventListener('click', (e) => {
+    // Only spawn particles if clicking generally on the background, 
+    // avoiding clicks on interactive elements like buttons or the nav
+    if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.nav-pill-container') || e.target.closest('.server-card')) {
+      return;
+    }
+
+    const numParticles = Math.floor(Math.random() * 3) + 3; // 3 to 5 particles
+    const emojis = ['🌸', '💮', '💖', '✨'];
+
+    for (let i = 0; i < numParticles; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'flower-particle';
+      particle.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+
+      // Random spread direction
+      const angle = Math.random() * Math.PI * 2;
+      const velocity = 30 + Math.random() * 50;
+      const tx = Math.cos(angle) * velocity + 'px';
+      const ty = Math.sin(angle) * velocity + 'px';
+      const rot = (Math.random() * 360 - 180) + 'deg';
+
+      particle.style.left = e.clientX + window.scrollX + 'px';
+      particle.style.top = e.clientY + window.scrollY + 'px';
+      particle.style.setProperty('--tx', tx);
+      particle.style.setProperty('--ty', ty);
+      particle.style.setProperty('--rot', rot);
+
+      document.body.appendChild(particle);
+
+      // Clean up particle
+      setTimeout(() => {
+        particle.remove();
+      }, 800);
+    }
+  });
+
 });

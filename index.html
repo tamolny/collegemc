@@ -1,63 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CollegeMC - Minecraft Server for College Students</title>
-  
+
   <!-- Favicon & screen icons -->
   <link rel="icon" type="image/png" href="images/logo_cmc.png">
   <link rel="apple-touch-icon" href="images/logo_cmc.png">
-  
+
   <!-- SEO Meta Tags -->
-  <meta name="description" content="CollegeMC is a Minecraft server community for college students around the world. Meet friends, build together, and take a break from studying!">
+  <meta name="description"
+    content="CollegeMC is a Minecraft server community for college students around the world. Meet friends, build together, and take a break from studying!">
   <meta name="keywords" content="minecraft, college, server, community, students, collegemc">
   <meta name="author" content="CollegeMC">
-  
+
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://collegemc.com/">
   <meta property="og:title" content="CollegeMC - Minecraft Server for College Students">
   <meta property="og:description" content="Server: collegemc.com">
   <meta property="og:image" content="https://collegemc.com/images/logo_cmc.png">
-  
+
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image">
   <meta property="twitter:url" content="https://collegemc.com/">
   <meta property="twitter:title" content="CollegeMC - Minecraft Server for College Students">
   <meta property="twitter:description" content="Server: collegemc.com">
   <meta property="twitter:image" content="https://collegemc.com/images/logo_cmc.png">
-  
+
   <!-- Stylesheets & Fonts -->
   <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Quicksand:wght@400;600&family=Nunito:wght@400;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Quicksand:wght@400;600&family=Nunito:wght@400;600&display=swap"
+    rel="stylesheet">
   <script src="./script.js" defer></script>
 </head>
+
 <body>
   <!-- Announcement Banner (dismissible) -->
   <div id="announcement-banner" class="announcement-banner">
-    <p>🎉 Welcome to CollegeMC! Check out our <a href="https://map.collegemc.com" target="_blank" class="announcement-link">map</a>!</p>
+    <p>🎉 Welcome to CollegeMC! Check out our <a href="https://map.collegemc.com" target="_blank"
+        class="announcement-link">map</a>!</p>
     <button type="button" id="announcement-dismiss" class="announcement-dismiss" aria-label="Dismiss">×</button>
   </div>
-  
-  <!-- Floating nav: layered menu (Map / Leaderboard → Vanilla / Modded), hamburger or Back in center -->
+
+  <div id="nav-overlay" class="nav-overlay" aria-hidden="true"></div>
+
+  <!-- Floating nav: Pill expansion menu -->
   <div class="nav-wrap" role="navigation" aria-label="Quick links">
-    <ul class="nav-menu" id="nav-menu" aria-expanded="false">
-      <li class="nav-menu-item" id="nav-item-left"></li>
-      <li class="nav-menu-item" id="nav-item-right"></li>
-    </ul>
-    <button type="button" id="menu-toggle" class="nav-trigger" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
-      <span class="nav-trigger-icon" aria-hidden="true">
-        <span class="nav-trigger-line"></span>
-        <span class="nav-trigger-line"></span>
-        <span class="nav-trigger-line"></span>
-      </span>
-    </button>
-    <button type="button" id="nav-back" class="nav-trigger nav-back" aria-label="Back" style="display: none;">
-      <span class="nav-back-text">← Back</span>
-    </button>
+    <div class="nav-pill-container" id="nav-pill-container">
+      <ul class="nav-menu" id="nav-menu" aria-expanded="false">
+        <li class="nav-menu-item" id="nav-item-left"></li>
+        <li class="nav-menu-trigger">
+          <button type="button" id="menu-toggle" class="nav-trigger" aria-label="Open menu" aria-expanded="false"
+            aria-controls="nav-menu">
+            <span class="nav-trigger-icon" aria-hidden="true">
+              <span class="nav-trigger-line"></span>
+              <span class="nav-trigger-line"></span>
+              <span class="nav-trigger-line"></span>
+            </span>
+          </button>
+          <button type="button" id="nav-back" class="nav-trigger nav-back" aria-label="Back" style="display: none;">
+            <span class="nav-back-text" aria-hidden="true">🔙</span>
+          </button>
+        </li>
+        <li class="nav-menu-item" id="nav-item-right"></li>
+      </ul>
+    </div>
   </div>
-  
+
   <div id="flower-counter" class="flower-counter">🌸 0</div>
   <div id="click-counter" class="click-counter">Flowers Popped: 0 🎉</div>
   <div class="COLLEGE MC!">
@@ -66,7 +79,8 @@
       <p class="created-by">A place for college students to play Minecraft!</p>
       <div class="content-block">
         <h2>What is <span class="rainbow-text">CMC</span>?</h2>
-        <p><span class="rainbow-text">CMC</span> was designed for college students around the world to meet and enjoy Minecraft! Here's what you can do on <span class="rainbow-text">CMC</span>:</p>
+        <p><span class="rainbow-text">CMC</span> was designed for college students around the world to meet and enjoy
+          Minecraft! Here's what you can do on <span class="rainbow-text">CMC</span>:</p>
         <ol>
           <li>Meet other college students who love Minecraft</li>
           <li>Build amazing creations together</li>
@@ -113,7 +127,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="server-info" id="server-info">
         <h3 class="server-info-title">Join Our Servers!</h3>
         <p class="server-info-subtitle">Connect to a Minecraft server below</p>
@@ -122,7 +136,7 @@
           <p class="server-loading" id="server-loading">Loading servers...</p>
         </div>
       </div>
-      
+
       <div class="discord-section">
         <h3>Join Our Community!</h3>
         <p>We don't bite!</p>
@@ -130,7 +144,7 @@
           Join the discord!
         </a>
       </div>
-      
+
       <div id="falling-leaves"></div>
     </main>
   </div>
@@ -148,5 +162,7 @@
   <footer class="site-footer">
     <a href="debug.html" class="footer-debug-link">Debug</a>
   </footer>
+
 </body>
+
 </html>
