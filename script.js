@@ -453,6 +453,266 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // ----- In-game rain and thunder: Minecraft pixel rain falling into a blossom pond -----
+  // Drops land on the pond and break into square pixel ripples; thunder adds a pixel bolt inside the
+  // logo window and a soft flash the pond catches. Pauses with the petals; still under reduced motion.
+  function startWeather() {
+    const layer = document.querySelector('.sky-rain');
+    const hero = document.querySelector('.hero');
+    const artEl = document.querySelector('.hero-art');
+    if (!layer || !hero) return;
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let still = motion.matches;
+
+    const shelf = document.createElement('div');
+    shelf.className = 'cloud-shelf';
+    const pond = document.createElement('div');
+    pond.className = 'pond';
+    const canvas = document.createElement('canvas');
+    const flash = document.createElement('div');
+    flash.className = 'sky-flash';
+    layer.append(shelf, pond, canvas, flash);
+    const ctx = canvas.getContext('2d');
+    const pause = document.getElementById('petal-pause');
+
+    const PX = 2; // one "pixel" of the rain, in CSS px
+    // depth runs back to front: far drops are short and faint and land near the pond's far bank
+    const DEPTHS = [
+      { share: 0.45, len: [4, 6], speed: 520, w: 1, color: '--rain-far', land: [0.08, 0.3], ring: [26, 36], ripples: 0.15 },
+      { share: 0.35, len: [6, 9], speed: 760, w: 1, color: '--rain-mid', land: [0.3, 0.62], ring: [40, 60], ripples: 0.4 },
+      { share: 0.2, len: [9, 13], speed: 1050, w: 2, color: '--rain-near', land: [0.62, 0.92], ring: [60, 92], ripples: 1 }
+    ];
+    let W = 0, H = 0, dpr = 1, pondTop = 0, pondH = 0, text = null, art = null;
+    let drops = [], ripples = [], ticks = [], colors = {};
+    let visible = true, last = 0, nextStrike = 0, bolt = null, raf = 0;
+
+    function readColors() {
+      const cs = getComputedStyle(document.documentElement);
+      for (const k of ['--rain-far', '--rain-mid', '--rain-near', '--pond-ring', '--pond-tick', '--bolt-core', '--bolt-glow']) colors[k] = cs.getPropertyValue(k).trim();
+    }
+
+    function resize() {
+      const r = hero.getBoundingClientRect();
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = Math.round(r.width); H = Math.round(r.height);
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      pondH = pond.offsetHeight; pondTop = H - pondH;
+      const t = document.querySelector('.hero-text')?.getBoundingClientRect();
+      text = t ? { x0: t.left - r.left - 12, x1: t.right - r.left + 12, y0: t.top - r.top - 12, y1: t.bottom - r.top + 12 } : null;
+      const a = artEl?.getBoundingClientRect();
+      art = a ? { x0: a.left - r.left, x1: a.right - r.left, top: a.top - r.top, bottom: a.bottom - r.top } : null;
+      const count = Math.round(Math.min(200, (W * H) / (W < 600 ? 5600 : 3800)));
+      drops = Array.from({ length: count }, () => spawn(true));
+      // rings and splashes from the old size would draw off the new pond
+      ripples = []; ticks = [];
+      if (still) seedStill();
+      sizeBolt();
+    }
+
+    function pickDepth() {
+      const roll = Math.random();
+      let acc = 0;
+      for (const d of DEPTHS) { acc += d.share; if (roll <= acc) return d; }
+      return DEPTHS[0];
+    }
+
+    function spawn(anywhere, tries = 0) {
+      const d = pickDepth();
+      const x = Math.random() * W;
+      // thinner behind the headline: most drops that would cross the text column are moved out of it, near ones always
+      // (on a phone the text spans the width, so after a few tries a far drop is allowed through)
+      const inText = text && x > text.x0 && x < text.x1;
+      if (inText && tries < 4 && (d === DEPTHS[2] || Math.random() < 0.6)) return spawn(anywhere, tries + 1);
+      const len = d.len[0] + Math.random() * (d.len[1] - d.len[0]);
+      const land = pondTop + pondH * (d.land[0] + Math.random() * (d.land[1] - d.land[0]));
+      return { x, y: anywhere ? Math.random() * land : -len * PX - Math.random() * 60, len, d, land, v: d.speed * (0.9 + Math.random() * 0.2) };
+    }
+
+    function behindArt(p) {
+      // the logo window hides drops passing behind it, and catches near ones on its top edge
+      return art && p.x > art.x0 && p.x < art.x1 && p.y + p.len * PX > art.top && p.y < art.bottom;
+    }
+
+    function ripple(x, y, d) {
+      // every drop breaks the surface, but only some leave a ring, so the pond reads as rings, not noise
+      ticks.push({ x, y, t: 0 });
+      if (Math.random() > d.ripples) return;
+      const w = d.ring[0] + Math.random() * (d.ring[1] - d.ring[0]);
+      ripples.push({ x, y, w, t: 0, life: 1.3 + Math.random() * 0.5, second: Math.random() < 0.6 });
+    }
+
+    function seedStill() {
+      // reduced motion: a handful of resting rings on the pond, drawn once
+      ripples = Array.from({ length: Math.round(W / 70) }, () => {
+        const d = pickDepth();
+        return { x: Math.random() * W, y: pondTop + pondH * (d.land[0] + Math.random() * (d.land[1] - d.land[0])), w: d.ring[1], t: 0.45, life: 1, second: true };
+      });
+    }
+
+    // a square ripple seen from the side: a flat pixel rectangle outline that widens and fades
+    function drawRing(x, y, w, h, alpha) {
+      if (alpha <= 0) return;
+      ctx.globalAlpha = alpha;
+      const x0 = Math.round((x - w / 2) / PX) * PX, y0 = Math.round((y - h / 2) / PX) * PX;
+      const ww = Math.max(PX * 2, Math.round(w / PX) * PX), hh = Math.max(PX * 2, Math.round(h / PX) * PX);
+      ctx.fillRect(x0, y0, ww, PX);
+      ctx.fillRect(x0, y0 + hh - PX, ww, PX);
+      ctx.fillRect(x0, y0, PX, hh);
+      ctx.fillRect(x0 + ww - PX, y0, PX, hh);
+    }
+
+    function drawPond(dt) {
+      ctx.fillStyle = colors['--pond-ring'];
+      ripples = ripples.filter(rp => (rp.t += dt / rp.life) < 1);
+      for (const rp of ripples) {
+        const k = 0.3 + rp.t * 0.9;
+        drawRing(rp.x, rp.y, rp.w * k, rp.w * k * 0.24, 0.9 * (1 - rp.t) ** 1.5);
+        if (rp.second && rp.t > 0.25) {
+          const k2 = 0.3 + (rp.t - 0.25) * 0.9;
+          drawRing(rp.x, rp.y, rp.w * k2 * 0.6, rp.w * k2 * 0.6 * 0.26, 0.6 * (1 - rp.t));
+        }
+      }
+      // the little upward splash where a drop breaks the surface
+      ctx.fillStyle = colors['--pond-tick'];
+      ticks = ticks.filter(tk => (tk.t += dt) < 0.14);
+      for (const tk of ticks) {
+        ctx.globalAlpha = 1 - tk.t / 0.14;
+        const h = Math.round((6 - tk.t * 30) / PX) * PX;
+        if (h > 0) ctx.fillRect(Math.round(tk.x / PX) * PX, Math.round((tk.y - h - PX) / PX) * PX, PX, h);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // ----- lightning, inside the logo window: over the art and its tint, under the logo -----
+    const boltCanvas = document.createElement('canvas');
+    boltCanvas.className = 'sky-bolt';
+    artEl?.append(boltCanvas);
+    const bctx = boltCanvas.getContext('2d');
+    let BW = 0, BH = 0;
+
+    function sizeBolt() {
+      if (!artEl) return;
+      BW = Math.round(artEl.offsetWidth); BH = Math.round(artEl.offsetHeight);
+      boltCanvas.width = BW * dpr; boltCanvas.height = BH * dpr;
+      bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function makeBolt() {
+      // a jagged pixel bolt down one side of the window, in 4px blocks, with one short fork;
+      // it runs all the way to the ground at the bottom of the window
+      const left = Math.random() < 0.5;
+      const a = BW * (left ? 0.06 : 0.7), b = BW * (left ? 0.3 : 0.94);
+      const pts = [[(a + b) / 2, -4]];
+      let x = (a + b) / 2, y = -4;
+      while (y < BH) { y = Math.min(BH, y + 12 + Math.random() * 18); x = Math.max(a, Math.min(b, x + (Math.random() - 0.5) * 36)); pts.push([x, y]); }
+      const at = 2 + Math.floor(Math.random() * Math.max(1, Math.floor(pts.length / 2) - 2));
+      const fork = [pts[at]];
+      let fx = pts[at][0], fy = pts[at][1];
+      for (let i = 0; i < 3; i++) { fy += 12 + Math.random() * 12; fx += (left ? 1 : -1) * (8 + Math.random() * 12); fork.push([fx, fy]); }
+      return { pts, fork, t: 0 };
+    }
+
+    function drawBlocks(pts, size, color) {
+      bctx.fillStyle = color;
+      for (let i = 1; i < pts.length; i++) {
+        const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+        const steps = Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) / 4);
+        for (let k = 0; k <= steps; k++) {
+          const x = x0 + ((x1 - x0) * k) / steps, y = y0 + ((y1 - y0) * k) / steps;
+          bctx.fillRect(Math.round(x / 4) * 4 - (size - 4) / 2, Math.round(y / 4) * 4 - (size - 4) / 2, size, size);
+        }
+      }
+    }
+
+    function strike(now) {
+      if (artEl) bolt = makeBolt();
+      flash.classList.remove('is-on'); void flash.offsetWidth; flash.classList.add('is-on');
+      hero.classList.remove('is-striking'); void hero.offsetWidth; hero.classList.add('is-striking');
+      nextStrike = now + 6000 + Math.random() * 5000;
+    }
+
+    function thunder(now, dt) {
+      if (!nextStrike) nextStrike = now + 3500 + Math.random() * 1000;
+      if (now >= nextStrike) strike(now);
+      if (!bolt) return;
+      bolt.t += dt;
+      bctx.clearRect(0, 0, BW, BH);
+      // two quick pulses, then gone
+      if (bolt.t < 0.09 || (bolt.t > 0.14 && bolt.t < 0.24)) {
+        drawBlocks(bolt.pts, 12, colors['--bolt-glow']);
+        drawBlocks(bolt.fork, 8, colors['--bolt-glow']);
+        drawBlocks(bolt.pts, 4, colors['--bolt-core']);
+        drawBlocks(bolt.fork, 4, colors['--bolt-core']);
+        // where it touches down: a flat flare spreading along the ground
+        const [gx] = bolt.pts[bolt.pts.length - 1];
+        drawBlocks([[gx - 28, BH - 4], [gx + 28, BH - 4]], 8, colors['--bolt-glow']);
+        drawBlocks([[gx - 14, BH - 4], [gx + 14, BH - 4]], 4, colors['--bolt-core']);
+        drawBlocks([[gx - 8, BH - 12], [gx + 8, BH - 12]], 4, colors['--bolt-glow']);
+      }
+      if (bolt.t > 0.3) { bolt = null; bctx.clearRect(0, 0, BW, BH); }
+    }
+
+    const isRaining = () => ['rain', 'thunder'].includes(document.documentElement.dataset.weather);
+    // the loop only runs while there is rain to draw: on screen, not paused, tab visible, motion allowed
+    const canAnimate = () => isRaining() && visible && !still && !pause?.checked && !document.hidden;
+
+    function frame(now) {
+      raf = 0;
+      if (!canAnimate()) return;
+      const weather = document.documentElement.dataset.weather;
+      const dt = Math.min(0.05, (now - last) / 1000 || 0); last = now;
+      ctx.clearRect(0, 0, W, H);
+
+      for (const p of drops) {
+        p.y += p.v * dt;
+        if (art && p.d !== DEPTHS[0] && p.x > art.x0 + 8 && p.x < art.x1 - 8 && p.y + p.len * PX >= art.top && p.y < art.top) {
+          // near drops tick off the top of the window frame
+          ticks.push({ x: p.x, y: art.top, t: 0 });
+          Object.assign(p, spawn(false)); continue;
+        }
+        if (p.y + p.len * PX >= p.land) { ripple(p.x, p.land, p.d); Object.assign(p, spawn(false)); continue; }
+        if (behindArt(p)) continue;
+        ctx.fillStyle = colors[p.d.color];
+        ctx.fillRect(Math.round(p.x / PX) * PX, Math.round(p.y / PX) * PX, p.d.w * PX, Math.round(p.len) * PX);
+      }
+      drawPond(dt);
+      if (weather === 'thunder') thunder(now, dt); else nextStrike = 0;
+      raf = requestAnimationFrame(frame);
+    }
+
+    // start the loop when it may run; under reduced motion draw the still pond once instead
+    function update() {
+      if (still) {
+        bolt = null; bctx.clearRect(0, 0, BW, BH);
+        flash.classList.remove('is-on'); hero.classList.remove('is-striking');
+        ctx.clearRect(0, 0, W, H);
+        if (isRaining()) drawPond(0);
+        return;
+      }
+      if (canAnimate() && !raf) {
+        last = performance.now();
+        raf = requestAnimationFrame(frame);
+      }
+    }
+
+    // border-box: the pond's padding changes the hero's height without touching its content box
+    new ResizeObserver(() => { resize(); update(); }).observe(hero, { box: 'border-box' });
+    new MutationObserver(() => { readColors(); resize(); update(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-sky', 'data-weather'] });
+    new IntersectionObserver(([e]) => { visible = e.isIntersecting; update(); }).observe(hero);
+    pause?.addEventListener('change', update);
+    document.addEventListener('visibilitychange', update);
+    motion.addEventListener('change', () => {
+      still = motion.matches;
+      if (still) seedStill(); else ripples = [];
+      update();
+    });
+    readColors();
+    resize();
+    update();
+  }
+
+  startWeather();
   loadServers();
 
 
