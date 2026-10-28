@@ -268,9 +268,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const copyable = noStatus ? '' : copyAddr;
       const statusInitial = noStatus ? 'Not yet' : '…';
       const playersInitial = noStatus ? 'Not yet' : '…';
-      // Joinable versions: servers.json "java" wins, else the version the server reports; "bedrock" marks Geyser
+      // Joinable versions: servers.json "java" wins, else the version the server reports.
+      // "bedrock" (Geyser) is either an address, shown as its own copyable row, or true for just a tag
+      const bedrockAddr = typeof server.bedrock === 'string' ? escapeHtml(server.bedrock) : '';
       const javaChip = server.java ? `<li>Java ${escapeHtml(server.java)}</li>` : '';
-      const bedrockChip = server.bedrock ? '<li class="server-version--bedrock">Bedrock</li>' : '';
+      const bedrockChip = server.bedrock && !bedrockAddr ? '<li class="server-version--bedrock">Bedrock</li>' : '';
+      const addressRow = (edition, shown, copy, disabled) => `<div class="server-address-container">
+      ${bedrockAddr ? `<span class="server-edition">${edition}</span>` : ''}
+      <code class="server-address" data-address="${copy}"${disabled ? '' : ' title="Click to copy"'}>${shown.replace(/\./g, '.<wbr>')}</code>
+      <button type="button" class="copy-button" data-address="${copy}" aria-label="Copy ${bedrockAddr ? edition + ' ' : ''}address"${disabled ? ' disabled' : ''}>Copy</button>
+    </div>`;
       return `<div class="server-card" id="${cardId}">
   <img class="server-icon" src="images/logo_cmc.png" alt="" width="64" height="64">
   <div class="server-main">
@@ -281,9 +288,9 @@ document.addEventListener("DOMContentLoaded", () => {
     <p class="server-motd" id="server-motd-${i}">${noStatus ? 'Coming soon' : '…'}</p>
     <ul class="server-versions" id="server-versions-${i}" aria-label="Versions you can join with"${javaChip || bedrockChip ? '' : ' hidden'}>${javaChip}${bedrockChip}</ul>
   </div>
-  <div class="server-address-container">
-    <code class="server-address" data-address="${copyable}"${noStatus ? '' : ' title="Click to copy"'}>${displayAddr}</code>
-    <button type="button" class="copy-button" data-address="${copyable}" aria-label="Copy address"${noStatus ? ' disabled' : ''}>Copy</button>
+  <div class="server-join">
+    ${addressRow('Java', displayAddr, copyable, noStatus)}
+    ${bedrockAddr ? addressRow('Bedrock', bedrockAddr, bedrockAddr, false) : ''}
   </div>
   <dl class="server-stats">
     <div class="server-status"><dt>Status</dt><dd><span class="server-status-unknown" id="${statusId}" data-checked="${noStatus}" data-no-status="${noStatus}">${statusInitial}</span></dd></div>

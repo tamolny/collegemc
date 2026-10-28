@@ -430,11 +430,37 @@ main > section,
   display: none;
 }
 
+.server-join {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
 .server-address-container {
   display: flex;
   align-items: stretch;
   gap: 0;
   min-width: 0;
+}
+
+/* Java / Bedrock tag in front of each address when a server takes both */
+.server-edition {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.5rem;
+  padding: 0 var(--space-sm);
+  border: 2px solid var(--color-ink);
+  border-right: 0;
+  border-radius: var(--radius-input) 0 0 var(--radius-input);
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font: 500 var(--text-sm)/1 var(--font-outlier);
+}
+
+.server-edition + .server-address {
+  border-radius: 0;
 }
 
 .server-address {
@@ -1578,9 +1604,25 @@ body:has(.petal-pause-input:checked) .leaf {
     display: none;
   }
 
-  .server-address-container,
+  .server-join,
   .server-stats {
     grid-column: 1 / -1;
+  }
+
+  /* two addresses side by side with a tag need the room on a phone */
+  .server-edition {
+    min-width: 3.75rem;
+    padding: 0 var(--space-2xs);
+  }
+
+  .server-edition + .server-address {
+    padding: 0 var(--space-xs);
+    font-size: var(--text-xs);
+  }
+
+  .server-edition ~ .copy-button {
+    min-width: 64px;
+    padding: 0 var(--space-sm);
   }
 
   .staff-container {
