@@ -6,7 +6,7 @@
     "statusSource": "collegemc",
     "apiBase": "https://api.collegemc.com",
     "apiPath": "/api",
-    "bedrock": true
+    "bedrock": "bedrock.collegemc.com"
   },
   {
     "name": "Modded",
