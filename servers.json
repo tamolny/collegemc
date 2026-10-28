@@ -5,7 +5,8 @@
     "addressCopy": "104.204.222.149:25605",
     "statusSource": "collegemc",
     "apiBase": "https://api.collegemc.com",
-    "apiPath": "/api"
+    "apiPath": "/api",
+    "bedrock": true
   },
   {
     "name": "Modded",

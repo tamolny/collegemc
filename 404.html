@@ -6,68 +6,32 @@
   <title>Page not found - CollegeMC</title>
   <link rel="icon" type="image/png" href="images/logo_cmc.png">
   <link rel="apple-touch-icon" href="images/logo_cmc.png">
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
   <style>
+    body { padding-bottom: 0; }
     .error-wrap {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 40px 20px;
-      text-align: center;
+      min-height: 100svh;
+      display: grid;
+      place-content: center;
+      justify-items: start;
+      gap: var(--space-lg);
+      max-width: 760px;
+      margin-inline: auto;
+      padding: var(--space-2xl) var(--gutter);
     }
-    .error-card {
-      background: linear-gradient(145deg, #FFC4D1 0%, #FFB6C1 100%);
-      padding: 40px;
-      border-radius: 18px;
-      box-shadow: 0 6px 20px rgba(255, 150, 170, 0.3);
-      border: 2px dashed white;
-      max-width: 420px;
-    }
-    .error-card h1 {
-      font-family: 'Quicksand', sans-serif;
-      font-size: 28px;
-      color: #544c4a;
-      margin: 0 0 12px;
-    }
-    .error-card p {
-      font-family: 'Quicksand', sans-serif;
-      color: #333;
-      margin: 0 0 24px;
-    }
-    .error-card .error-code {
-      font-size: 14px;
-      color: rgba(84, 76, 74, 0.7);
-      margin-bottom: 20px;
-    }
-    .error-card a {
-      display: inline-block;
-      background: #FF9DB5;
-      color: white;
-      padding: 12px 28px;
-      border-radius: 8px;
-      font-family: 'Quicksand', sans-serif;
-      font-weight: 600;
-      text-decoration: none;
-      transition: background 0.2s ease, transform 0.2s ease;
-    }
-    .error-card a:hover {
-      background: #FF7A9D;
-      transform: scale(1.04);
-    }
+    .error-wrap img { width: 168px; height: auto; }
+    .error-code { font-size: clamp(4rem, 12vw, 7rem); line-height: 0.9; font-weight: 700; color: var(--color-focus); }
+    .error-wrap h1 { font-size: clamp(2rem, 5vw, 3rem); }
   </style>
 </head>
 <body>
-  <div class="error-wrap">
-    <img src="images/logo_cmc.png" alt="CollegeMC" width="80" height="80" style="margin-bottom: 16px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.8));">
-    <div class="error-card">
-      <h1>Page not found</h1>
-      <p class="error-code">404</p>
-      <p>This page doesn’t exist or was moved. Head back home and try again!</p>
-      <a href="index.html">← Back home</a>
-    </div>
-  </div>
+  <main class="error-wrap">
+    <img src="images/logo_cmc.png" alt="CollegeMC" width="1920" height="1252">
+    <p class="error-code">404</p>
+    <h1>Page not found</h1>
+    <p class="lead">This page doesn’t exist or was moved. Head back home and try again!</p>
+    <a href="index.html" class="btn">Back home</a>
+  </main>
 </body>
 </html>
