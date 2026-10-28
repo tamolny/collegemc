@@ -20,9 +20,15 @@
   --radius-card: 20px; --radius-input: 12px; --radius-pill: 999px; --rule-hair: 1px; --shadow-card: 0 6px 18px var(--color-shadow);
   --banner-h: 48px;
   /* in-game sky, from the server's worldInfo */
-  --sky-dawn: oklch(90% 0.06 40); --sky-dusk: oklch(84% 0.08 20); --sky-night: oklch(27% 0.05 285); --sky-storm: oklch(88% 0.012 5);
+  --sky-dawn: oklch(90% 0.06 40); --sky-dusk: oklch(84% 0.08 20); --sky-night: oklch(27% 0.05 285);
+  --sky-rain-day: oklch(91% 0.03 350); --sky-thunder-day: oklch(82% 0.035 330); --sky-thunder-night: oklch(21% 0.04 290);
   --tint-dawn: oklch(86% 0.08 50 / 0.22); --tint-dusk: oklch(62% 0.14 30 / 0.3); --tint-night: oklch(24% 0.06 285 / 0.58); --tint-storm: oklch(55% 0.02 250 / 0.32);
-  --color-rain: oklch(72% 0.03 240 / 0.5);
+  /* in-game rain and thunder: pixel rain falling into a blossom pond (script.js draws it) */
+  --pond-h: 76px;
+  --rain-far: oklch(64% 0.04 280 / 0.35); --rain-mid: oklch(58% 0.06 280 / 0.55); --rain-near: oklch(52% 0.08 280 / 0.78);
+  --pond-ring: oklch(55% 0.12 355 / 0.85); --pond-tick: oklch(55% 0.09 330 / 0.8); --pond-wet: oklch(72% 0.08 355); --pond-edge: oklch(62% 0.1 355);
+  --cloud: oklch(84% 0.05 350); --cloud-storm: oklch(70% 0.05 330);
+  --bolt-core: oklch(99% 0.01 90); --bolt-glow: oklch(88% 0.09 5 / 0.55); --flash: oklch(97% 0.02 300);
   /* Minecraft server-list signal bars */
   --color-signal: oklch(72% 0.2 142); --color-signal-off: oklch(70% 0.01 5); --color-signal-x: oklch(58% 0.2 27);
   /* the CMC rainbow, deep enough to read on the pink paper */
@@ -30,4 +36,17 @@
   /* staff role badges */
   --role-owner: oklch(66% 0.2 25); --role-admin: oklch(72% 0.14 300); --role-mod: var(--color-pink-strong);
   --tracking-display: -0.02em;
+}
+
+/* the weather at night: lighter rain and ripples on a dark pond */
+html[data-sky="night"] {
+  --rain-far: oklch(80% 0.03 290 / 0.22); --rain-mid: oklch(85% 0.04 290 / 0.38); --rain-near: oklch(90% 0.04 300 / 0.58);
+  --pond-ring: oklch(85% 0.09 355 / 0.75); --pond-tick: oklch(88% 0.06 330 / 0.7); --pond-wet: oklch(36% 0.06 340); --pond-edge: oklch(48% 0.08 350);
+  --cloud: oklch(32% 0.03 300); --cloud-storm: oklch(27% 0.035 290);
+}
+
+@media (max-width: 40rem) {
+  :root {
+    --pond-h: 48px;
+  }
 }
