@@ -502,7 +502,7 @@ document.addEventListener("DOMContentLoaded", () => {
       text = t ? { x0: t.left - r.left - 12, x1: t.right - r.left + 12, y0: t.top - r.top - 12, y1: t.bottom - r.top + 12 } : null;
       const a = artEl?.getBoundingClientRect();
       art = a ? { x0: a.left - r.left, x1: a.right - r.left, top: a.top - r.top, bottom: a.bottom - r.top } : null;
-      const count = Math.round(Math.min(200, (W * H) / (W < 600 ? 5600 : 3800)));
+      const count = Math.round(Math.min(200, (W * H) / (W < 600 ? 4200 : 3800)));
       drops = Array.from({ length: count }, () => spawn(true));
       // rings and splashes from the old size would draw off the new pond
       ripples = []; ticks = [];
@@ -521,9 +521,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const d = pickDepth();
       const x = Math.random() * W;
       // thinner behind the headline: most drops that would cross the text column are moved out of it, near ones always
-      // (on a phone the text spans the width, so after a few tries a far drop is allowed through)
+      // (on a phone the text spans the whole width, so there only the big near drops are kept out)
       const inText = text && x > text.x0 && x < text.x1;
-      if (inText && tries < 4 && (d === DEPTHS[2] || Math.random() < 0.6)) return spawn(anywhere, tries + 1);
+      const thin = d === DEPTHS[2] || (W >= 600 && Math.random() < 0.6);
+      if (inText && tries < 4 && thin) return spawn(anywhere, tries + 1);
       const len = d.len[0] + Math.random() * (d.len[1] - d.len[0]);
       const land = pondTop + pondH * (d.land[0] + Math.random() * (d.land[1] - d.land[0]));
       return { x, y: anywhere ? Math.random() * land : -len * PX - Math.random() * 60, len, d, land, v: d.speed * (0.9 + Math.random() * 0.2) };
@@ -543,11 +544,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function seedStill() {
-      // reduced motion: a handful of resting rings on the pond, drawn once
+      // reduced motion: a handful of resting rings on the pond, drawn once with the frozen rain
       ripples = Array.from({ length: Math.round(W / 70) }, () => {
         const d = pickDepth();
         return { x: Math.random() * W, y: pondTop + pondH * (d.land[0] + Math.random() * (d.land[1] - d.land[0])), w: d.ring[1], t: 0.45, life: 1, second: true };
       });
+    }
+
+    // reduced motion: the rain as one frozen moment, streaks hanging in the air over the still pond
+    function drawStillRain() {
+      for (const p of drops) {
+        if (behindArt(p) || p.y + p.len * PX >= p.land) continue;
+        ctx.fillStyle = colors[p.d.color];
+        ctx.fillRect(Math.round(p.x / PX) * PX, Math.round(p.y / PX) * PX, p.d.w * PX, Math.round(p.len) * PX);
+      }
     }
 
     // a square ripple seen from the side: a flat pixel rectangle outline that widens and fades
@@ -687,7 +697,7 @@ document.addEventListener("DOMContentLoaded", () => {
         bolt = null; bctx.clearRect(0, 0, BW, BH);
         flash.classList.remove('is-on'); hero.classList.remove('is-striking');
         ctx.clearRect(0, 0, W, H);
-        if (isRaining()) drawPond(0);
+        if (isRaining()) { drawStillRain(); drawPond(0); }
         return;
       }
       if (canAnimate() && !raf) {
